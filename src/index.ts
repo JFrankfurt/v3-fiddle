@@ -2,7 +2,7 @@ import { BigNumber } from '@ethersproject/bignumber'
 import { Contract } from '@ethersproject/contracts'
 import { JsonRpcProvider } from '@ethersproject/providers'
 import { Wallet } from '@ethersproject/wallet'
-import { Token } from '@uniswap/sdk-core'
+import { ChainId, Token } from '@uniswap/sdk-core'
 import { abi as V3FactoryABI } from '@uniswap/v3-core/artifacts/contracts/UniswapV3Factory.sol/UniswapV3Factory.json'
 import { abi as PoolABI } from '@uniswap/v3-core/artifacts/contracts/UniswapV3Pool.sol/UniswapV3Pool.json'
 import { abi as WETH9ABI } from '@uniswap/v3-periphery/artifacts/contracts/interfaces/external/IWETH9.sol/IWETH9.json'
@@ -14,6 +14,7 @@ import { NonfungiblePositionManager } from 'types/NonfungiblePositionManager'
 import { SwapRouter } from 'types/SwapRouter'
 import { UniswapV3Factory } from 'types/UniswapV3Factory'
 import { UniswapV3Pool } from 'types/UniswapV3Pool'
+import * as addresses from './addresses'
 
 config({})
 
@@ -32,7 +33,7 @@ export const TICK_SPACINGS: { [amount in FeeAmount]: number } = {
 const gasLimit = 5000000
 const gasPrice = 1
 const fee = FeeAmount.LOW
-const chainId = parseInt(process.env.chainId || '1')
+const chainId = parseInt(process.env.chainId || '1') as ChainId
 
 const getMinTick = (tickSpacing: number) =>
   Math.ceil(-887272 / tickSpacing) * tickSpacing
@@ -43,11 +44,11 @@ const getMaxTick = (tickSpacing: number) =>
 const sqrtPriceX96 = BigNumber.from('79228162514264337593543950336')
 
 const NonfungiblePositionManagerAddress =
-  '0x40b8b8657d756D163e1255B78419bD8bCC14dCB3'
-const SwapRouterAddress = '0x45478A2D83A8471d4A9f4285Ce729527fAeB0794'
-const WETH9Address = '0x7ba6C6345E7a73cC0D41d762C7Db9cb3DB721396'
-const WETH9Address2 = '0xbBca0fFBFE60F60071630A8c80bb6253dC9D6023'
-const V3Factory = '0x5BbFe6FF864718cD1cE0F126be99e96239E3caDD'
+  addresses.NonfungiblePositionManager[chainId]
+const SwapRouterAddress = addresses.SwapRouter[chainId]
+const WETH9Address = addresses.WETH9[chainId]
+const Token2Address = addresses.Token2[chainId]
+const V3FactoryAddress = addresses.V3Factory[chainId]
 
 const provider = new JsonRpcProvider(process.env.rpc)
 
@@ -56,7 +57,7 @@ let wallet = new Wallet(pk)
 wallet = wallet.connect(provider)
 
 const TokenContract = new Contract(WETH9Address, WETH9ABI, wallet) as IWETH9
-const Token2Contract = new Contract(WETH9Address2, WETH9ABI, wallet) as IWETH9
+const Token2Contract = new Contract(Token2Address, WETH9ABI, wallet) as IWETH9
 
 const NonfungiblePositionManagerContract = new Contract(
   NonfungiblePositionManagerAddress,
@@ -69,7 +70,7 @@ const SwapRouterContract = new Contract(
   wallet
 ) as SwapRouter
 const PoolFactoryContract = new Contract(
-  V3Factory,
+  V3FactoryAddress,
   V3FactoryABI,
   wallet
 ) as UniswapV3Factory
@@ -137,7 +138,7 @@ async function main() {
 
     // sdk compute pool address
     const TokenA = new Token(chainId, WETH9Address, 18, 'WETH', 'WETH9')
-    const TokenB = new Token(chainId, WETH9Address2, 18, 'WETH', 'WETH9')
+    const TokenB = new Token(chainId, Token2Address, 18, 'WETH', 'WETH9')
     const poolAddress = await PoolFactoryContract.getPool(
       TokenA.address,
       TokenB.address,
